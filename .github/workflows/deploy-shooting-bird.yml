@@ -33,8 +33,7 @@ jobs:
           enablement: true
       - run: npm ci
       - run: npm run typecheck
-      - run: npx vite build --base=/ai/
-        working-directory: games/shooting-bird/apps/site
+      - run: npm run build --workspace @kgf/site -- --base=/ai/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: games/shooting-bird/apps/site/dist

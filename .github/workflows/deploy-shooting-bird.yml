@@ -24,13 +24,11 @@ jobs:
       run:
         working-directory: games/shooting-bird
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build --workspace @kgf/site -- --base=/ai/

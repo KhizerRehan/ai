@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Tiny Explorers</title>
+<meta name="description" content="A playful learning game for ages 3 to 7: animals, colors, fruits and shapes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --paper: #FFF6E5;
+    --paper-deep: #FFE9C2;
+    --dot: rgba(43, 33, 64, 0.08);
+    --ink: #2B2140;
+    --ink-soft: #5C5273;
+    --white: #FFFFFF;
+    --sun: #FFD23F;
+    --coral: #FF6B6B;
+    --sky: #4CC9F0;
+    --leaf: #6BCB77;
+    --grape: #9B5DE5;
+    --peach: #FFB45E;
+    --mint: #B8F2E6;
+    --rose: #FFB3C6;
+    --shadow: 0 8px 0 var(--ink);
+    --shadow-sm: 0 5px 0 var(--ink);
+    --radius: 28px;
+    --font-display: 'Fredoka', 'Arial Rounded MT Bold', 'Nunito', sans-serif;
+    --font-body: 'Nunito', 'Fredoka', sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image: radial-gradient(var(--dot) 2.6px, transparent 2.8px);
+    background-size: 30px 30px;
+    overflow: hidden;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #confetti {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 60;
+  }
+
+  .blob {
+    position: fixed; border-radius: 50%; filter: blur(2px); opacity: 0.55;
+    pointer-events: none; z-index: 0;
+    animation: float 9s ease-in-out infinite;
+  }
+  .blob-1 { width: 32vw; height: 32vw; max-width: 320px; max-height: 320px; background: var(--sun); top: -8vw; left: -8vw; }
+  .blob-2 { width: 26vw; height: 26vw; max-width: 260px; max-height: 260px; background: var(--sky); bottom: -6vw; right: -6vw; animation-delay: -3s; }
+  .blob-3 { width: 18vw; height: 18vw; max-width: 180px; max-height: 180px; background: var(--rose); top: 40%; right: -5vw; animation-delay: -6s; }
+
+  .screen {
+    display: none; position: fixed; inset: 0; z-index: 1;
+    flex-direction: column; align-items: center;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    overflow-y: auto; overflow-x: hidden;
+  }
+  .screen.active { display: flex; animation: screenIn 0.4s cubic-bezier(.2,.9,.3,1.2) both; }
+
+  .wrap { width: 100%; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+
+  .title {
+    font-family: var(--font-display); font-weight: 700; line-height: 0.95;
+    font-size: clamp(2.6rem, 10vw, 4.6rem); text-align: center; margin: 8px 0 0;
+    letter-spacing: 0.01em;
+  }
+  .title .w1 { color: var(--coral); display: inline-block; transform: rotate(-4deg); animation: wobble 2.6s ease-in-out infinite; }
+  .title .w2 { color: var(--sky); display: inline-block; transform: rotate(3deg); animation: wobble 2.6s ease-in-out infinite reverse; }
+  .title span { -webkit-text-stroke: 2.5px var(--ink); paint-order: stroke fill; text-shadow: 4px 5px 0 var(--ink); }
+  .subtitle { font-weight: 800; color: var(--ink-soft); font-size: clamp(1rem, 3.5vw, 1.3rem); text-align: center; margin: 0; }
+
+  .btn {
+    font-family: var(--font-display); font-weight: 600; color: var(--ink);
+    border: 4px solid var(--ink); border-radius: var(--radius);
+    background: var(--white); box-shadow: var(--shadow);
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 72px; padding: 12px 26px; font-size: clamp(1.25rem, 4vw, 1.6rem); line-height: 1.1;
+    transition: transform 0.12s cubic-bezier(.2,.9,.3,1.4), box-shadow 0.12s, filter 0.2s;
+    position: relative; text-decoration: none;
+  }
+  .btn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 11px 0 var(--ink); }
+  .btn:active { transform: translateY(6px) scale(0.98); box-shadow: 0 2px 0 var(--ink); }
+  .btn:focus-visible { outline: 5px solid var(--sun); outline-offset: 4px; }
+  .btn svg { width: 1.4em; height: 1.4em; flex: none; }
+  .btn-sun { background: var(--sun); }
+  .btn-coral { background: var(--coral); color: #fff; }
+  .btn-sky { background: var(--sky); }
+  .btn-leaf { background: var(--leaf); }
+  .btn-grape { background: var(--grape); color: #fff; }
+  .btn-peach { background: var(--peach); }
+  .btn-mint { background: var(--mint); }
+  .btn-ghost { background: var(--paper-deep); }
+  .btn-icon { min-width: 72px; width: 72px; height: 72px; padding: 0; border-radius: 50%; }
+  .btn-icon svg { width: 34px; height: 34px; }
+  .btn-big { min-height: 92px; font-size: clamp(1.5rem, 5vw, 2rem); padding: 16px 34px; }
+
+  .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px, 3.5vw, 26px); width: 100%; }
+  .cat-btn {
+    flex-direction: column; gap: 6px; aspect-ratio: 1 / 1; width: 100%; padding: 14px 10px;
+    font-size: clamp(1.3rem, 4.6vw, 1.9rem); border-radius: 34px; animation: popIn 0.6s cubic-bezier(.2,.9,.3,1.5) both;
+  }
+  .cat-btn svg.cat-icon { width: 52%; height: 52%; max-width: 150px; max-height: 150px; }
+  .cat-btn:nth-child(1) { animation-delay: 0.05s; transform: rotate(-2deg); }
+  .cat-btn:nth-child(2) { animation-delay: 0.15s; transform: rotate(2deg); }
+  .cat-btn:nth-child(3) { animation-delay: 0.25s; transform: rotate(1.5deg); }
+  .cat-btn:nth-child(4) { animation-delay: 0.35s; transform: rotate(-1.5deg); }
+  .cat-btn:hover { transform: rotate(0deg) translateY(-4px) scale(1.04); }
+  .cat-btn:active { transform: translateY(6px) scale(0.97); }
+  .earned-badge {
+    position: absolute; top: -14px; right: -14px; width: 54px; height: 54px; border-radius: 50%;
+    background: var(--sun); border: 4px solid var(--ink); display: none; align-items: center; justify-content: center;
+    box-shadow: 0 4px 0 var(--ink); animation: popIn 0.5s cubic-bezier(.2,.9,.3,1.6) both;
+  }
+  .earned-badge svg { width: 30px; height: 30px; }
+  .cat-btn.earned .earned-badge { display: flex; }
+
+  .cog {
+    position: fixed; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 5; width: 64px; height: 64px; min-width: 64px; min-height: 64px; border-radius: 50%;
+    background: var(--paper-deep); opacity: 0.85; padding: 0; box-shadow: var(--shadow-sm);
+  }
+  .cog svg { width: 30px; height: 30px; }
+  .cog:hover svg { animation: spin 1.6s linear infinite; }
+
+  .topbar { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .dots { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--ink); background: var(--white); transition: background 0.3s, transform 0.3s; }
+  .dot.done { background: var(--leaf); }
+  .dot.now { background: var(--sun); transform: scale(1.3); }
+
+  .prompt-card {
+    width: 100%; background: var(--white); border: 4px solid var(--ink); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px 18px; display: flex; align-items: center; gap: 14px;
+    animation: popIn 0.45s cubic-bezier(.2,.9,.3,1.4) both;
+  }
+  .prompt-text { flex: 1; font-family: var(--font-display); font-weight: 600; font-size: clamp(1.45rem, 5.2vw, 2.3rem); line-height: 1.15; margin: 0; }
+  .speak-btn.speaking { background: var(--sun); animation: pulse 0.9s ease-in-out infinite; }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(12px, 3.2vw, 24px); width: 100%; max-width: 560px; }
+  .card {
+    position: relative; width: 100%; aspect-ratio: 1 / 1; min-height: 128px;
+    background: var(--white); border: 4px solid var(--ink); border-radius: 30px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px;
+    cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: clamp(1.05rem, 3.6vw, 1.5rem); color: var(--ink);
+    transition: transform 0.14s cubic-bezier(.2,.9,.3,1.5), box-shadow 0.14s, filter 0.3s, background 0.3s, opacity 0.3s;
+    animation: popIn 0.5s cubic-bezier(.2,.9,.3,1.5) both;
+  }
+  .card:nth-child(1) { animation-delay: 0.05s; } .card:nth-child(2) { animation-delay: 0.12s; }
+  .card:nth-child(3) { animation-delay: 0.19s; } .card:nth-child(4) { animation-delay: 0.26s; }
+  .card svg { width: 64%; height: 64%; }
+  .card:hover { transform: translateY(-4px) scale(1.05) rotate(-1deg); box-shadow: 0 12px 0 var(--ink); }
+  .card:active { transform: translateY(5px) scale(0.97); box-shadow: 0 3px 0 var(--ink); }
+  .card:focus-visible { outline: 5px solid var(--sun); outline-offset: 4px; }
+  .card.is-wrong { animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both; }
+  .card.is-dim { opacity: 0.4; filter: grayscale(0.8); pointer-events: none; transform: scale(0.94); box-shadow: 0 3px 0 var(--ink); }
+  .card.is-correct { background: var(--leaf); animation: correctPop 0.7s cubic-bezier(.2,.9,.3,1.6) both; z-index: 2; }
+  .card.is-locked { pointer-events: none; }
+  .card .label { line-height: 1; }
+
+  .victory-stars { display: flex; gap: 12px; }
+  .victory-stars svg { width: clamp(64px, 18vw, 96px); height: clamp(64px, 18vw, 96px); opacity: 0.25; transform: scale(0.6); }
+  .victory-stars svg.lit { opacity: 1; animation: starPop 0.6s cubic-bezier(.2,.9,.3,1.7) both; }
+  .victory-stars svg:nth-child(1) { animation-delay: 0.2s; } .victory-stars svg:nth-child(2) { animation-delay: 0.5s; } .victory-stars svg:nth-child(3) { animation-delay: 0.8s; }
+  .big-heading { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.2rem, 8vw, 3.6rem); margin: 0; text-align: center; line-height: 1; }
+  .big-heading.rainbow { background: linear-gradient(90deg, var(--coral), var(--peach), var(--sun), var(--leaf), var(--sky), var(--grape)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .sticker {
+    width: clamp(150px, 42vw, 220px); height: clamp(150px, 42vw, 220px); border-radius: 50%;
+    background: var(--white); border: 4px solid var(--ink); box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: center; padding: 10px; position: relative;
+  }
+  .sticker::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; border: 3px dashed rgba(43,33,64,0.25); }
+  .sticker svg { width: 78%; height: 78%; }
+  .sticker.reveal { animation: stickerReveal 0.9s cubic-bezier(.2,.9,.3,1.5) both; animation-delay: 1.1s; }
+  .sticker.locked { background: var(--paper-deep); box-shadow: none; border-style: dashed; opacity: 0.7; }
+  .sticker.locked svg { opacity: 0.35; filter: grayscale(1); }
+  .sticker-name { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.1rem, 4vw, 1.4rem); text-align: center; margin: 0; }
+  .sticker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; width: 100%; justify-items: center; }
+  .sticker-slot { display: flex; flex-direction: column; align-items: center; gap: 8px; animation: popIn 0.6s cubic-bezier(.2,.9,.3,1.5) both; }
+  .sticker-slot:nth-child(2) { animation-delay: 0.1s; } .sticker-slot:nth-child(3) { animation-delay: 0.2s; } .sticker-slot:nth-child(4) { animation-delay: 0.3s; }
+  .sticker-slot .sticker { width: clamp(120px, 34vw, 180px); height: clamp(120px, 34vw, 180px); }
+  .lock-mark { position: absolute; bottom: -8px; right: -8px; width: 44px; height: 44px; border-radius: 50%; background: var(--paper); border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; }
+  .lock-mark svg { width: 22px; height: 22px; opacity: 1; filter: none; }
+
+  .panel { width: 100%; background: var(--white); border: 4px solid var(--ink); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .panel h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.35rem; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .panel h3 svg { width: 26px; height: 26px; }
+  .panel p { margin: 0; color: var(--ink-soft); font-weight: 600; font-size: 1rem; }
+  .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg .btn { flex: 1; min-height: 60px; font-size: 1.15rem; padding: 8px 12px; box-shadow: var(--shadow-sm); }
+  .seg .btn.on { background: var(--sun); }
+  .seg .btn.on::after { content: '✓'; margin-left: 6px; }
+
+  .modal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(43,33,64,0.55); align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(3px); }
+  .modal.active { display: flex; }
+  .modal-box { width: 100%; max-width: 420px; background: var(--paper); border: 4px solid var(--ink); border-radius: 32px; box-shadow: var(--shadow); padding: 22px; display: flex; flex-direction: column; gap: 14px; animation: popIn 0.4s cubic-bezier(.2,.9,.3,1.5) both; }
+  .modal-box.shake { animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both; }
+  .gate-q { font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; text-align: center; margin: 0; }
+  .gate-ans { font-family: var(--font-display); font-weight: 700; font-size: 2.4rem; min-height: 72px; background: var(--white); border: 4px solid var(--ink); border-radius: 20px; display: flex; align-items: center; justify-content: center; letter-spacing: 0.1em; }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .keypad .btn { min-height: 64px; font-size: 1.5rem; padding: 0; box-shadow: var(--shadow-sm); border-radius: 20px; }
+  .gate-msg { text-align: center; font-weight: 800; color: var(--coral); min-height: 1.4em; margin: 0; }
+
+  .moon { width: clamp(160px, 45vw, 240px); height: clamp(160px, 45vw, 240px); animation: float 5s ease-in-out infinite; }
+  .zz { font-family: var(--font-display); font-weight: 700; color: var(--grape); position: absolute; animation: zzz 2.4s ease-in-out infinite; opacity: 0; }
+
+  .hidden { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+  @keyframes screenIn { from { opacity: 0; transform: translateY(18px) scale(0.98); } to { opacity: 1; transform: none; } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.5) rotate(-6deg); } to { opacity: 1; } }
+  @keyframes wobble { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(-1deg) translateY(-5px); } }
+  @keyframes float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-16px) rotate(4deg); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+  @keyframes shake { 10%, 90% { transform: translateX(-3px); } 20%, 80% { transform: translateX(6px); } 30%, 50%, 70% { transform: translateX(-10px); } 40%, 60% { transform: translateX(10px); } }
+  @keyframes correctPop { 0% { transform: scale(1); } 40% { transform: scale(1.18) rotate(3deg); } 100% { transform: scale(1.08); } }
+  @keyframes starPop { 0% { transform: scale(0.2) rotate(-40deg); } 60% { transform: scale(1.3) rotate(10deg); } 100% { transform: scale(1) rotate(0); } }
+  @keyframes stickerReveal { 0% { transform: scale(0) rotate(-180deg); opacity: 0; } 60% { transform: scale(1.2) rotate(10deg); opacity: 1; } 100% { transform: scale(1) rotate(-4deg); opacity: 1; } }
+  @keyframes zzz { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(30px, -60px) scale(1.3); } }
+
+  @media (min-width: 720px) {
+    .card { min-height: 180px; }
+    .cat-btn svg.cat-icon { width: 56%; height: 56%; }
+  }
+  @media (max-height: 560px) and (orientation: landscape) {
+    .choices { max-width: 420px; }
+    .card { min-height: 110px; }
+    .cat-grid { max-width: 440px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    .card.is-wrong { opacity: 0.6; }
+    .blob { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob-1" aria-hidden="true"></div>
+<div class="blob blob-2" aria-hidden="true"></div>
+<div class="blob blob-3" aria-hidden="true"></div>
+
+<section id="screen-home" class="screen active" aria-label="Home">
+  <div class="wrap">
+    <h1 class="title"><span class="w1">Tiny</span> <span class="w2">Explorers</span></h1>
+    <p class="subtitle">Tap a picture to start an adventure!</p>
+    <div class="cat-grid" id="cat-grid"></div>
+    <button class="btn btn-sun btn-big" id="btn-stickers" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h12l4 4v12H4z"/><path d="M16 4v4h4"/><path d="M8 13l2 2 4-4"/></svg>
+      My Sticker Book
+    </button>
+  </div>
+  <button class="btn btn-icon cog" id="btn-cog" type="button" aria-label="Grown-ups settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+  </button>
+</section>
+
+<section id="screen-play" class="screen" aria-label="Game">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn btn-icon btn-ghost" id="btn-play-home" type="button" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
+      </button>
+      <div class="dots" id="dots" aria-label="Progress"></div>
+      <div id="play-cat-icon" style="width:64px;height:64px" aria-hidden="true"></div>
+    </div>
+    <div class="prompt-card" id="prompt-card">
+      <p class="prompt-text" id="prompt-text" aria-live="polite"></p>
+      <button class="btn btn-icon btn-sky speak-btn" id="btn-repeat" type="button" aria-label="Repeat voice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>
+      </button>
+    </div>
+    <div class="choices" id="choices"></div>
+  </div>
+</section>
+
+<section id="screen-victory" class="screen" aria-label="You did it">
+  <div class="wrap">
+    <h2 class="big-heading rainbow" id="victory-title">Hooray!</h2>
+    <p class="subtitle" id="victory-sub"></p>
+    <div class="victory-stars" id="victory-stars" aria-label="Stars earned"></div>
+    <div class="sticker reveal" id="victory-sticker"></div>
+    <p class="sticker-name" id="victory-sticker-name"></p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+      <button class="btn btn-leaf btn-big" id="btn-again" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+        Play Again
+      </button>
+      <button class="btn btn-sun btn-big" id="btn-more" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+        More Games
+      </button>
+    </div>
+  </div>
+</section>
+
+<section id="screen-stickers" class="screen" aria-label="Sticker book">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn btn-icon btn-ghost" id="btn-stickers-home" type="button" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
+      </button>
+      <h2 class="big-heading" style="font-size:clamp(1.8rem,7vw,2.8rem)">Sticker Book</h2>
+      <div style="width:72px"></div>
+    </div>
+    <p class="subtitle" id="sticker-count"></p>
+    <div class="sticker-grid" id="sticker-grid"></div>
+  </div>
+</section>
+
+<section id="screen-dashboard" class="screen" aria-label="Grown-ups dashboard">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn btn-icon btn-ghost" id="btn-dash-home" type="button" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
+      </button>
+      <h2 class="big-heading" style="font-size:clamp(1.6rem,6vw,2.4rem)">Grown-ups</h2>
+      <div style="width:72px"></div>
+    </div>
+
+    <div class="panel">
+      <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>Voice speed</h3>
+      <p>How fast the helper voice reads questions aloud.</p>
+      <div class="seg" id="seg-voice">
+        <button class="btn" type="button" data-rate="slow">Slow</button>
+        <button class="btn" type="button" data-rate="normal">Normal</button>
+        <button class="btn" type="button" data-rate="fast">Fast</button>
+      </div>
+      <button class="btn btn-sky" type="button" id="btn-voice-test" style="min-height:60px;box-shadow:var(--shadow-sm)">Test voice</button>
+    </div>
+
+    <div class="panel">
+      <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Screen time limit</h3>
+      <p>The game gently locks when time is up. Played this session: <strong id="dash-elapsed">0 min</strong></p>
+      <div class="seg" id="seg-time">
+        <button class="btn" type="button" data-min="0">Off</button>
+        <button class="btn" type="button" data-min="5">5 min</button>
+        <button class="btn" type="button" data-min="10">10 min</button>
+        <button class="btn" type="button" data-min="20">20 min</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>Sticker book</h3>
+      <p id="dash-sticker-info"></p>
+      <button class="btn btn-coral" type="button" id="btn-clear" style="min-height:60px;box-shadow:var(--shadow-sm)">Clear all stickers</button>
+    </div>
+
+    <button class="btn btn-leaf btn-big" id="btn-dash-play" type="button">Back to the game</button>
+  </div>
+</section>
+
+<section id="screen-locked" class="screen" aria-label="Time for a break">
+  <div class="wrap" style="position:relative;justify-content:center;min-height:80vh">
+    <div style="position:relative">
+      <svg class="moon" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="42" fill="#FFD23F" stroke="#2B2140" stroke-width="3"/>
+        <circle cx="66" cy="42" r="34" fill="#FFF6E5"/>
+        <circle cx="66" cy="42" r="34" fill="#FFF6E5"/>
+        <path d="M30 52 q6 -6 12 0" stroke="#2B2140" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M30 66 q8 6 16 0" stroke="#2B2140" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="26" cy="60" r="4" fill="#FFB3C6"/>
+      </svg>
+      <span class="zz" style="right:-10px;top:10px;font-size:2rem">z</span>
+      <span class="zz" style="right:-30px;top:-10px;font-size:2.6rem;animation-delay:0.8s">z</span>
+      <span class="zz" style="right:-50px;top:-30px;font-size:3.2rem;animation-delay:1.6s">Z</span>
+    </div>
+    <h2 class="big-heading">Time for a break!</h2>
+    <p class="subtitle">Great playing today. Let's rest our eyes and stretch.</p>
+    <button class="btn btn-ghost" id="btn-unlock" type="button" style="margin-top:20px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0"/></svg>
+      Grown-ups unlock
+    </button>
+  </div>
+</section>
+
+<div class="modal" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-q">
+  <div class="modal-box" id="gate-box">
+    <p class="gate-q" id="gate-q">Grown-ups only: What is 4 + 3?</p>
+    <div class="gate-ans" id="gate-ans" aria-live="polite">&nbsp;</div>
+    <p class="gate-msg" id="gate-msg"></p>
+    <div class="keypad" id="keypad">
+      <button class="btn" type="button" data-key="1">1</button>
+      <button class="btn" type="button" data-key="2">2</button>
+      <button class="btn" type="button" data-key="3">3</button>
+      <button class="btn" type="button" data-key="4">4</button>
+      <button class="btn" type="button" data-key="5">5</button>
+      <button class="btn" type="button" data-key="6">6</button>
+      <button class="btn" type="button" data-key="7">7</button>
+      <button class="btn" type="button" data-key="8">8</button>
+      <button class="btn" type="button" data-key="9">9</button>
+      <button class="btn btn-coral" type="button" data-key="back" aria-label="Delete">⌫</button>
+      <button class="btn" type="button" data-key="0">0</button>
+      <button class="btn btn-leaf" type="button" data-key="ok" aria-label="Submit answer">✓</button>
+    </div>
+    <button class="btn btn-ghost" type="button" id="gate-cancel" style="min-height:56px;box-shadow:var(--shadow-sm)">Cancel</button>
+  </div>
+</div>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script>
+(() => {
+  'use strict';
+
+  const INK = '#2B2140';
+  const ROUND_SIZE = 6;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (sel) => document.querySelector(sel);
+
+  const Store = (() => {
+    const KEY = 'tiny-explorers:v1';
+    const defaults = { stickers: [], voiceRate: 'normal', timeLimitMin: 0 };
+    let mem = null;
+    function load() {
+      if (mem) return mem;
+      try {
+        const raw = localStorage.getItem(KEY);
+        mem = raw ? Object.assign({}, defaults, JSON.parse(raw)) : Object.assign({}, defaults);
+      } catch (e) {
+        mem = Object.assign({}, defaults);
+      }
+      if (!Array.isArray(mem.stickers)) mem.stickers = [];
+      return mem;
+    }
+    function save() {
+      try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) {}
+    }
+    return {
+      get: () => load(),
+      set(patch) { Object.assign(load(), patch); save(); },
+      addSticker(id) { const s = load(); if (!s.stickers.includes(id)) { s.stickers.push(id); save(); } },
+      clearStickers() { load().stickers = []; save(); }
+    };
+  })();
+
+  const Sfx = (() => {
+    let ctx = null;
+    function ensure() {
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctx = new AC();
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function tone({ freq, type = 'sine', start = 0, dur = 0.2, vol = 0.2, slideTo = null }) {
+      const c = ensure();
+      if (!c) return;
+      const o = c.createOscillator();
+      const g = c.createGain();
+      const t = c.currentTime + start;
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(c.destination);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    }
+    return {
+      unlock: ensure,
+      tap() { tone({ freq: 620, type: 'triangle', dur: 0.07, vol: 0.1 }); },
+      correct() {
+        [523.25, 659.25, 783.99].forEach((f, i) => {
+          tone({ freq: f, type: 'square', start: i * 0.05, dur: 0.38, vol: 0.07 });
+          tone({ freq: f * 2, type: 'triangle', start: i * 0.05, dur: 0.3, vol: 0.05 });
+        });
+      },
+      wrong() { tone({ freq: 230, type: 'sine', dur: 0.3, vol: 0.2, slideTo: 130 }); },
+      fanfare() {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone({ freq: f, type: 'square', start: i * 0.13, dur: 0.26, vol: 0.09 }));
+        [523.25, 659.25, 783.99, 1046.5].forEach((f) => tone({ freq: f, type: 'triangle', start: 0.55, dur: 1.0, vol: 0.07 }));
+        [1318.5, 1568].forEach((f, i) => tone({ freq: f, type: 'sine', start: 0.75 + i * 0.1, dur: 0.5, vol: 0.05 }));
+      },
+      sleepy() {
+        [440, 392, 330].forEach((f, i) => tone({ freq: f, type: 'sine', start: i * 0.3, dur: 0.5, vol: 0.14 }));
+      }
+    };
+  })();
+
+  const Voice = (() => {
+    const synth = window.speechSynthesis;
+    const rates = { slow: 0.75, normal: 0.95, fast: 1.25 };
+    const listeners = [];
+    let voice = null;
+    let pending = null;
+    function pickVoice() {
+      if (!synth) return;
+      const vs = synth.getVoices();
+      if (!vs.length) return;
+      const pref = ['Samantha', 'Google US English', 'Karen', 'Moira', 'Daniel', 'Google UK English Female'];
+      voice = pref.map((n) => vs.find((v) => v.name.includes(n))).find(Boolean)
+        || vs.find((v) => v.lang && v.lang.toLowerCase().startsWith('en'))
+        || vs[0];
+    }
+    if (synth) {
+      pickVoice();
+      if (typeof synth.addEventListener === 'function') synth.addEventListener('voiceschanged', pickVoice);
+      else synth.onvoiceschanged = pickVoice;
+    }
+    function notify(state) { listeners.forEach((l) => l(state)); }
+    function speak(text) {
+      if (!synth || !text) return;
+      clearTimeout(pending);
+      synth.cancel();
+      pending = setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(text);
+        if (voice) u.voice = voice;
+        u.rate = rates[Store.get().voiceRate] || rates.normal;
+        u.pitch = 1.1;
+        u.onstart = () => notify(true);
+        u.onend = () => notify(false);
+        u.onerror = () => notify(false);
+        synth.speak(u);
+      }, 80);
+    }
+    return {
+      supported: !!synth,
+      speak,
+      stop() { clearTimeout(pending); if (synth) synth.cancel(); notify(false); },
+      onState(fn) { listeners.push(fn); },
+      get rate() { return rates[Store.get().voiceRate] || rates.normal; }
+    };
+  })();
+
+  const Confetti = (() => {
+    const canvas = $('#confetti');
+    const ctx = canvas.getContext('2d');
+    const colors = ['#FFD23F', '#FF6B6B', '#4CC9F0', '#6BCB77', '#9B5DE5', '#FFB45E'];
+    let parts = [];
+    let raf = null;
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+    function star(r) {
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const rad = i % 2 === 0 ? r : r / 2.2;
+        const a = (Math.PI / 5) * i - Math.PI / 2;
+        ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+    function loop() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      parts = parts.filter((p) => p.life > 0 && p.y < window.innerHeight + 40);
+      for (const p of parts) {
+        p.vx *= p.drag;
+        p.vy = p.vy * p.drag + p.g;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+        p.life -= p.decay;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.4));
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        if (p.shape === 0) ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        else if (p.shape === 1) { ctx.beginPath(); ctx.arc(0, 0, p.size / 2.4, 0, Math.PI * 2); ctx.fill(); }
+        else star(p.size / 1.7);
+        ctx.restore();
+      }
+      if (parts.length) raf = requestAnimationFrame(loop);
+      else { raf = null; ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); }
+    }
+    function burst(x, y, count = 80, power = 1) {
+      if (reducedMotion) count = Math.floor(count / 2);
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = (4 + Math.random() * 9) * power;
+        parts.push({
+          x, y,
+          vx: Math.cos(a) * s,
+          vy: Math.sin(a) * s - 5 * power,
+          g: 0.28, drag: 0.985,
+          rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
+          size: 7 + Math.random() * 9,
+          color: colors[(i + Math.floor(Math.random() * 2)) % colors.length],
+          shape: i % 3,
+          life: 1, decay: 0.007 + Math.random() * 0.009
+        });
+      }
+      if (!raf) raf = requestAnimationFrame(loop);
+    }
+    function rain() {
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => burst(window.innerWidth * (0.2 + 0.3 * i), window.innerHeight * 0.22, 80, 1.3), i * 220);
+      }
+    }
+    return { burst, rain };
+  })();
+
+  const svgOpen = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">';
+  const svgClose = '</svg>';
+  const sw = `stroke="${INK}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"`;
+  const face = (x1, x2, y) => `<circle cx="${x1}" cy="${y}" r="4" fill="${INK}"/><circle cx="${x2}" cy="${y}" r="4" fill="${INK}"/><circle cx="${x1 + 1.5}" cy="${y - 1.5}" r="1.3" fill="#fff"/><circle cx="${x2 + 1.5}" cy="${y - 1.5}" r="1.3" fill="#fff"/>`;
+
+  const Icons = {
+    animals: {
+      lion: { label: 'Lion', svg: `${svgOpen}
+        <g fill="#E8862A" ${sw}>${[0,45,90,135,180,225,270,315].map((d) => `<circle cx="${50 + 36 * Math.cos(d * Math.PI / 180)}" cy="${52 + 36 * Math.sin(d * Math.PI / 180)}" r="12"/>`).join('')}</g>
+        <circle cx="50" cy="52" r="36" fill="#E8862A"/>
+        <circle cx="50" cy="54" r="27" fill="#F6C453" ${sw}/>
+        <ellipse cx="50" cy="63" rx="11" ry="8" fill="#FFF0C9"/>
+        ${face(40, 60, 48)}
+        <path d="M46 60 l4 -3 l4 3 z" fill="${INK}"/>
+        <path d="M50 60 v4 M44 67 q6 4 12 0" fill="none" ${sw}/>
+      ${svgClose}` },
+      bear: { label: 'Bear', svg: `${svgOpen}
+        <circle cx="24" cy="30" r="12" fill="#8B5A2B" ${sw}/><circle cx="76" cy="30" r="12" fill="#8B5A2B" ${sw}/>
+        <circle cx="24" cy="30" r="5" fill="#D9A066"/><circle cx="76" cy="30" r="5" fill="#D9A066"/>
+        <circle cx="50" cy="54" r="34" fill="#8B5A2B" ${sw}/>
+        <ellipse cx="50" cy="64" rx="15" ry="11" fill="#D9A066"/>
+        ${face(38, 62, 46)}
+        <ellipse cx="50" cy="60" rx="6" ry="4.5" fill="${INK}"/>
+        <path d="M44 70 q6 4 12 0" fill="none" ${sw}/>
+      ${svgClose}` },
+      duck: { label: 'Duck', svg: `${svgOpen}
+        <ellipse cx="48" cy="68" rx="34" ry="20" fill="#FFD23F" ${sw}/>
+        <path d="M18 66 q-12 -2 -10 -14 q10 6 16 2" fill="#FFD23F" ${sw}/>
+        <circle cx="62" cy="38" r="20" fill="#FFD23F" ${sw}/>
+        <path d="M80 38 l16 4 l-16 6 z" fill="#FF8C42" ${sw}/>
+        <circle cx="66" cy="34" r="4" fill="${INK}"/><circle cx="67.5" cy="32.5" r="1.3" fill="#fff"/>
+        <path d="M40 72 q8 6 16 0" fill="none" stroke="#E8A600" stroke-width="2.5" stroke-linecap="round"/>
+      ${svgClose}` },
+      monkey: { label: 'Monkey', svg: `${svgOpen}
+        <circle cx="20" cy="48" r="12" fill="#8B5A2B" ${sw}/><circle cx="80" cy="48" r="12" fill="#8B5A2B" ${sw}/>
+        <circle cx="20" cy="48" r="5" fill="#F2C9A1"/><circle cx="80" cy="48" r="5" fill="#F2C9A1"/>
+        <circle cx="50" cy="50" r="32" fill="#8B5A2B" ${sw}/>
+        <path d="M30 50 a20 20 0 0 1 40 0 a20 22 0 0 1 -40 0 z" fill="#F2C9A1"/>
+        <circle cx="38" cy="40" r="11" fill="#F2C9A1"/><circle cx="62" cy="40" r="11" fill="#F2C9A1"/>
+        ${face(39, 61, 42)}
+        <circle cx="46" cy="55" r="2" fill="${INK}"/><circle cx="54" cy="55" r="2" fill="${INK}"/>
+        <path d="M40 63 q10 8 20 0" fill="none" ${sw}/>
+      ${svgClose}` },
+      elephant: { label: 'Elephant', svg: `${svgOpen}
+        <ellipse cx="20" cy="50" rx="16" ry="22" fill="#9FA8DA" ${sw}/><ellipse cx="80" cy="50" rx="16" ry="22" fill="#9FA8DA" ${sw}/>
+        <ellipse cx="20" cy="50" rx="8" ry="13" fill="#FFB3C6"/><ellipse cx="80" cy="50" rx="8" ry="13" fill="#FFB3C6"/>
+        <circle cx="50" cy="46" r="30" fill="#B0B8E8" ${sw}/>
+        <path d="M42 60 q-2 22 12 30 q10 2 10 -8 q-2 -4 -6 -2 q-2 6 -4 0 q-4 -10 2 -20 z" fill="#B0B8E8" ${sw}/>
+        ${face(39, 61, 42)}
+        <path d="M30 32 q6 -4 10 2 M60 34 q4 -6 10 -2" fill="none" ${sw}/>
+      ${svgClose}` },
+      frog: { label: 'Frog', svg: `${svgOpen}
+        <circle cx="30" cy="30" r="13" fill="#6BCB77" ${sw}/><circle cx="70" cy="30" r="13" fill="#6BCB77" ${sw}/>
+        <ellipse cx="50" cy="58" rx="38" ry="28" fill="#6BCB77" ${sw}/>
+        <circle cx="30" cy="30" r="7" fill="#fff"/><circle cx="70" cy="30" r="7" fill="#fff"/>
+        <circle cx="31" cy="31" r="3.5" fill="${INK}"/><circle cx="71" cy="31" r="3.5" fill="${INK}"/>
+        <path d="M30 60 q20 18 40 0" fill="#FF6B6B" ${sw}/>
+        <circle cx="22" cy="54" r="5" fill="#FFB3C6"/><circle cx="78" cy="54" r="5" fill="#FFB3C6"/>
+      ${svgClose}` },
+      cat: { label: 'Cat', svg: `${svgOpen}
+        <path d="M22 44 l-4 -28 l22 14 z" fill="#FFB45E" ${sw}/><path d="M78 44 l4 -28 l-22 14 z" fill="#FFB45E" ${sw}/>
+        <path d="M24 38 l-2 -14 l12 8 z" fill="#FFB3C6"/><path d="M76 38 l2 -14 l-12 8 z" fill="#FFB3C6"/>
+        <circle cx="50" cy="54" r="32" fill="#FFB45E" ${sw}/>
+        ${face(38, 62, 48)}
+        <path d="M46 58 l4 3 l4 -3 z" fill="#FF8C8C" ${sw}/>
+        <path d="M50 61 v4 M42 68 q4 4 8 -2 q4 6 8 2" fill="none" ${sw}/>
+        <path d="M12 54 l22 2 M12 64 l22 -2 M88 54 l-22 2 M88 64 l-22 -2" ${sw}/>
+      ${svgClose}` },
+      pig: { label: 'Pig', svg: `${svgOpen}
+        <path d="M22 38 l-6 -18 l20 10 z" fill="#FFA6C9" ${sw}/><path d="M78 38 l6 -18 l-20 10 z" fill="#FFA6C9" ${sw}/>
+        <circle cx="50" cy="54" r="33" fill="#FFB3C6" ${sw}/>
+        ${face(37, 63, 46)}
+        <ellipse cx="50" cy="63" rx="15" ry="10" fill="#FF8FB3" ${sw}/>
+        <circle cx="44" cy="63" r="3" fill="${INK}"/><circle cx="56" cy="63" r="3" fill="${INK}"/>
+        <path d="M40 78 q10 6 20 0" fill="none" ${sw}/>
+      ${svgClose}` },
+      giraffe: { label: 'Giraffe', svg: `${svgOpen}
+        <rect x="38" y="44" width="20" height="54" rx="9" fill="#F6C453" ${sw}/>
+        <g fill="#C9842A"><circle cx="44" cy="58" r="4"/><circle cx="52" cy="70" r="4.5"/><circle cx="44" cy="84" r="4"/><circle cx="54" cy="92" r="3"/></g>
+        <path d="M38 13 v-7 M62 13 v-7" stroke="#8B5A2B" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="38" cy="5" r="4" fill="#8B5A2B" ${sw}/><circle cx="62" cy="5" r="4" fill="#8B5A2B" ${sw}/>
+        <ellipse cx="25" cy="24" rx="8" ry="5" fill="#F6C453" ${sw}/><ellipse cx="75" cy="24" rx="8" ry="5" fill="#F6C453" ${sw}/>
+        <ellipse cx="50" cy="28" rx="22" ry="18" fill="#F6C453" ${sw}/>
+        <ellipse cx="50" cy="38" rx="13" ry="8" fill="#FFE2A0" ${sw}/>
+        <circle cx="46" cy="39" r="2" fill="${INK}"/><circle cx="54" cy="39" r="2" fill="${INK}"/>
+        ${face(41, 59, 26)}
+      ${svgClose}` },
+      zebra: { label: 'Zebra', svg: `${svgOpen}
+        <ellipse cx="30" cy="22" rx="7" ry="10" fill="#fff" ${sw}/><ellipse cx="70" cy="22" rx="7" ry="10" fill="#fff" ${sw}/>
+        <ellipse cx="50" cy="54" rx="30" ry="36" fill="#fff" ${sw}/>
+        <path d="M36 22 q6 -14 14 -4 q8 -12 14 4 z" fill="${INK}"/>
+        <path d="M30 32 q20 -6 40 0 M24 44 q26 -6 52 0 M28 60 q22 -6 44 0" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
+        ${face(38, 62, 52)}
+        <ellipse cx="50" cy="76" rx="16" ry="11" fill="#5C5273" ${sw}/>
+        <circle cx="44" cy="76" r="2.5" fill="${INK}"/><circle cx="56" cy="76" r="2.5" fill="${INK}"/>
+      ${svgClose}` },
+      owl: { label: 'Owl', svg: `${svgOpen}
+        <path d="M22 26 l-4 -18 l18 10 z" fill="#8B5A2B" ${sw}/><path d="M78 26 l4 -18 l-18 10 z" fill="#8B5A2B" ${sw}/>
+        <ellipse cx="50" cy="56" rx="34" ry="38" fill="#8B5A2B" ${sw}/>
+        <ellipse cx="50" cy="72" rx="20" ry="20" fill="#D9A066"/>
+        <path d="M40 66 l5 6 l5 -6 l5 6 l5 -6 M42 78 l4 6 l4 -6 l4 6 l4 -6" fill="none" stroke="#8B5A2B" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="36" cy="42" r="14" fill="#fff" ${sw}/><circle cx="64" cy="42" r="14" fill="#fff" ${sw}/>
+        <circle cx="37" cy="43" r="7" fill="${INK}"/><circle cx="65" cy="43" r="7" fill="${INK}"/>
+        <circle cx="40" cy="40" r="2.5" fill="#fff"/><circle cx="68" cy="40" r="2.5" fill="#fff"/>
+        <path d="M44 56 l6 10 l6 -10 z" fill="#FF8C42" ${sw}/>
+        <path d="M18 58 q-8 14 2 28 M82 58 q8 14 -2 28" fill="none" ${sw}/>
+        <path d="M40 94 l-3 4 M44 94 v4 M56 94 v4 M60 94 l3 4" stroke="#FF8C42" stroke-width="3" stroke-linecap="round"/>
+      ${svgClose}` },
+      penguin: { label: 'Penguin', svg: `${svgOpen}
+        <ellipse cx="50" cy="54" rx="30" ry="40" fill="${INK}" ${sw}/>
+        <path d="M22 44 q-14 14 -4 34 q8 -10 10 -30 z" fill="${INK}" ${sw}/><path d="M78 44 q14 14 4 34 q-8 -10 -10 -30 z" fill="${INK}" ${sw}/>
+        <ellipse cx="50" cy="62" rx="20" ry="28" fill="#fff"/>
+        <path d="M32 36 q18 -12 36 0 q-4 12 -18 12 q-14 0 -18 -12 z" fill="#fff"/>
+        <circle cx="42" cy="36" r="4" fill="${INK}"/><circle cx="58" cy="36" r="4" fill="${INK}"/>
+        <circle cx="43.5" cy="34.5" r="1.3" fill="#fff"/><circle cx="59.5" cy="34.5" r="1.3" fill="#fff"/>
+        <path d="M44 44 l6 8 l6 -8 z" fill="#FF8C42" ${sw}/>
+        <circle cx="34" cy="46" r="4" fill="#FFB3C6"/><circle cx="66" cy="46" r="4" fill="#FFB3C6"/>
+        <ellipse cx="40" cy="94" rx="9" ry="4" fill="#FF8C42" ${sw}/><ellipse cx="60" cy="94" rx="9" ry="4" fill="#FF8C42" ${sw}/>
+      ${svgClose}` },
+      fox: { label: 'Fox', svg: `${svgOpen}
+        <path d="M50 92 L14 56 L18 12 L44 34 L56 34 L82 12 L86 56 Z" fill="#FF8C42" ${sw}/>
+        <path d="M22 22 l14 14 l-12 10 z" fill="${INK}"/><path d="M78 22 l-14 14 l12 10 z" fill="${INK}"/>
+        <path d="M50 92 L30 62 Q50 50 70 62 Z" fill="#fff"/>
+        ${face(38, 62, 54)}
+        <ellipse cx="50" cy="72" rx="5" ry="4" fill="${INK}"/>
+        <path d="M46 78 q4 4 8 0" fill="none" ${sw}/>
+      ${svgClose}` },
+      octopus: { label: 'Octopus', svg: `${svgOpen}
+        <g fill="none" stroke="${INK}" stroke-width="13" stroke-linecap="round"><path d="M20 62 q-10 16 2 30"/><path d="M34 66 q-6 16 4 30"/><path d="M50 68 q-4 16 0 30"/><path d="M66 66 q6 16 -4 30"/><path d="M80 62 q10 16 -2 30"/></g>
+        <g fill="none" stroke="#9B5DE5" stroke-width="8" stroke-linecap="round"><path d="M20 62 q-10 16 2 30"/><path d="M34 66 q-6 16 4 30"/><path d="M50 68 q-4 16 0 30"/><path d="M66 66 q6 16 -4 30"/><path d="M80 62 q10 16 -2 30"/></g>
+        <path d="M14 56 a36 34 0 0 1 72 0 v12 h-72 z" fill="#9B5DE5" ${sw}/>
+        <circle cx="38" cy="46" r="8" fill="#fff" ${sw}/><circle cx="62" cy="46" r="8" fill="#fff" ${sw}/>
+        <circle cx="39" cy="47" r="4" fill="${INK}"/><circle cx="63" cy="47" r="4" fill="${INK}"/>
+        <circle cx="28" cy="58" r="4" fill="#FFB3C6"/><circle cx="72" cy="58" r="4" fill="#FFB3C6"/>
+        <path d="M44 60 q6 5 12 0" fill="none" ${sw}/>
+      ${svgClose}` },
+      turtle: { label: 'Turtle', svg: `${svgOpen}
+        <ellipse cx="32" cy="82" rx="9" ry="6" fill="#6BCB77" ${sw}/><ellipse cx="76" cy="82" rx="9" ry="6" fill="#6BCB77" ${sw}/>
+        <path d="M86 74 l10 -6 l-2 10 z" fill="#6BCB77" ${sw}/>
+        <circle cx="18" cy="62" r="12" fill="#6BCB77" ${sw}/>
+        <circle cx="15" cy="59" r="3" fill="${INK}"/><circle cx="16" cy="58" r="1" fill="#fff"/>
+        <path d="M10 68 q5 4 10 0" fill="none" ${sw}/>
+        <ellipse cx="54" cy="74" rx="34" ry="10" fill="#6BCB77" ${sw}/>
+        <path d="M24 72 a30 32 0 0 1 60 0 z" fill="#3A9D4F" ${sw}/>
+        <path d="M46 72 l4 -16 h8 l4 16 M50 56 l6 -12 M58 56 l8 -12 M46 60 l-12 -6 M62 60 l12 -6" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      ${svgClose}` },
+      butterfly: { label: 'Butterfly', svg: `${svgOpen}
+        <path d="M50 50 C30 10 6 20 12 44 C16 56 34 56 50 50 Z" fill="#FF6FB5" ${sw}/>
+        <path d="M50 50 C70 10 94 20 88 44 C84 56 66 56 50 50 Z" fill="#FF6FB5" ${sw}/>
+        <path d="M50 54 C30 70 14 88 28 92 C40 94 48 76 50 54 Z" fill="#FFB45E" ${sw}/>
+        <path d="M50 54 C70 70 86 88 72 92 C60 94 52 76 50 54 Z" fill="#FFB45E" ${sw}/>
+        <g fill="#FFD23F"><circle cx="28" cy="36" r="6"/><circle cx="72" cy="36" r="6"/></g>
+        <g fill="#fff" opacity="0.8"><circle cx="34" cy="80" r="4"/><circle cx="66" cy="80" r="4"/><circle cx="20" cy="46" r="2.5"/><circle cx="80" cy="46" r="2.5"/></g>
+        <ellipse cx="50" cy="58" rx="5" ry="22" fill="${INK}"/>
+        <circle cx="50" cy="34" r="7" fill="${INK}"/>
+        <path d="M46 28 q-6 -10 -12 -14 M54 28 q6 -10 12 -14" fill="none" ${sw}/>
+        <circle cx="34" cy="14" r="2.5" fill="${INK}"/><circle cx="66" cy="14" r="2.5" fill="${INK}"/>
+        <circle cx="47" cy="33" r="1.8" fill="#fff"/><circle cx="53" cy="33" r="1.8" fill="#fff"/>
+      ${svgClose}` }
+    },
+    colors: {},
+    fruits: {
+      apple: { label: 'Apple', svg: `${svgOpen}
+        <path d="M50 30 c-14 -14 -36 -4 -36 20 c0 18 12 38 26 38 c4 0 6 -2 10 -2 s6 2 10 2 c14 0 26 -20 26 -38 c0 -24 -22 -34 -36 -20 z" fill="#FF4B4B" ${sw}/>
+        <path d="M50 30 c0 -10 4 -16 10 -20" fill="none" stroke="#6B3E1E" stroke-width="4" stroke-linecap="round"/>
+        <path d="M52 22 c10 -10 24 -6 22 2 c-8 6 -18 4 -22 -2 z" fill="#6BCB77" ${sw}/>
+        <ellipse cx="34" cy="46" rx="5" ry="9" fill="#fff" opacity="0.5" transform="rotate(-15 34 46)"/>
+      ${svgClose}` },
+      banana: { label: 'Banana', svg: `${svgOpen}
+        <path d="M22 26 c-6 30 10 56 44 58 c14 1 24 -6 24 -8 c-30 6 -54 -14 -58 -50 c0 -4 -8 -6 -10 0 z" fill="#FFD23F" ${sw}/>
+        <path d="M30 32 c2 26 18 42 44 46" fill="none" stroke="#E8A600" stroke-width="3" stroke-linecap="round"/>
+        <path d="M20 22 l6 -4 l4 8" fill="#8B5A2B" ${sw}/>
+        <ellipse cx="86" cy="76" rx="5" ry="3" fill="#8B5A2B"/>
+      ${svgClose}` },
+      strawberry: { label: 'Strawberry', svg: `${svgOpen}
+        <path d="M50 92 c-20 0 -34 -24 -34 -44 c0 -14 14 -20 34 -20 s34 6 34 20 c0 20 -14 44 -34 44 z" fill="#FF4B6E" ${sw}/>
+        <g fill="#FFE08A">${[[40,46],[60,46],[50,58],[36,62],[64,62],[50,74],[42,82],[58,82]].map(([x,y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="3.6"/>`).join('')}</g>
+        <path d="M50 30 l-16 -10 l6 12 l-18 2 l16 8 l12 -4 l12 4 l16 -8 l-18 -2 l6 -12 z" fill="#6BCB77" ${sw}/>
+        <path d="M50 30 v-14" stroke="#4E9E5A" stroke-width="4" stroke-linecap="round"/>
+      ${svgClose}` },
+      grape: { label: 'Grapes', svg: `${svgOpen}
+        <path d="M50 20 c4 -8 12 -12 20 -10" fill="none" stroke="#6B3E1E" stroke-width="4" stroke-linecap="round"/>
+        <path d="M50 22 c-10 -12 -26 -6 -24 4 c10 4 20 2 24 -4 z" fill="#6BCB77" ${sw}/>
+        <g fill="#9B5DE5" ${sw}>
+          <circle cx="36" cy="38" r="11"/><circle cx="64" cy="38" r="11"/><circle cx="50" cy="40" r="11"/>
+          <circle cx="30" cy="56" r="11"/><circle cx="70" cy="56" r="11"/><circle cx="50" cy="58" r="11"/>
+          <circle cx="40" cy="74" r="11"/><circle cx="60" cy="74" r="11"/><circle cx="50" cy="88" r="10"/>
+        </g>
+        <circle cx="46" cy="36" r="3" fill="#fff" opacity="0.6"/><circle cx="26" cy="52" r="3" fill="#fff" opacity="0.6"/>
+      ${svgClose}` },
+      orange: { label: 'Orange', svg: `${svgOpen}
+        <circle cx="50" cy="56" r="36" fill="#FF8C42" ${sw}/>
+        <g fill="#E86F1F" opacity="0.6">${[[36,46],[52,40],[66,52],[40,66],[58,70],[30,58],[70,68]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="2"/>`).join('')}</g>
+        <path d="M50 20 c6 -12 20 -12 26 -6 c-8 8 -18 10 -26 6 z" fill="#6BCB77" ${sw}/>
+        <path d="M50 20 v-6" stroke="#4E9E5A" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="36" cy="44" rx="5" ry="8" fill="#fff" opacity="0.4" transform="rotate(-20 36 44)"/>
+      ${svgClose}` },
+      watermelon: { label: 'Watermelon', svg: `${svgOpen}
+        <path d="M8 40 a42 42 0 0 0 84 0 z" fill="#3A9D4F" ${sw}/>
+        <path d="M14 40 a36 36 0 0 0 72 0 z" fill="#CFF4D2"/>
+        <path d="M20 40 a30 30 0 0 0 60 0 z" fill="#FF4B6E"/>
+        <g fill="${INK}">${[[40,52],[56,54],[48,66],[34,46],[64,48],[52,46]].map(([x,y]) => `<ellipse cx="${x}" cy="${y}" rx="2.2" ry="3.2"/>`).join('')}</g>
+        <path d="M8 40 h84" ${sw}/>
+      ${svgClose}` },
+      pear: { label: 'Pear', svg: `${svgOpen}
+        <path d="M50 24 c-10 0 -14 12 -16 22 c-4 12 -16 18 -16 30 c0 12 14 18 32 18 s32 -6 32 -18 c0 -12 -12 -18 -16 -30 c-2 -10 -6 -22 -16 -22 z" fill="#C5E063" ${sw}/>
+        <path d="M50 24 c0 -8 2 -12 6 -16" fill="none" stroke="#6B3E1E" stroke-width="4" stroke-linecap="round"/>
+        <path d="M52 16 c8 -8 20 -4 18 2 c-8 4 -14 2 -18 -2 z" fill="#6BCB77" ${sw}/>
+        <ellipse cx="36" cy="70" rx="5" ry="8" fill="#fff" opacity="0.45" transform="rotate(-10 36 70)"/>
+      ${svgClose}` }
+    },
+    shapes: {}
+  };
+
+  const COLORS = {
+    red: { label: 'Red', hex: '#FF4B4B', light: '#FF8A8A' },
+    blue: { label: 'Blue', hex: '#3A86FF', light: '#86B5FF' },
+    yellow: { label: 'Yellow', hex: '#FFD23F', light: '#FFE78A' },
+    green: { label: 'Green', hex: '#4CB944', light: '#8EDB86' },
+    orange: { label: 'Orange', hex: '#FF8C42', light: '#FFB98A' },
+    purple: { label: 'Purple', hex: '#9B5DE5', light: '#C39BF2' },
+    pink: { label: 'Pink', hex: '#FF6FB5', light: '#FFA8D3' }
+  };
+  Object.entries(COLORS).forEach(([id, c]) => {
+    Icons.colors[id] = { label: c.label, svg: `${svgOpen}
+      <path d="M52 6 C66 4 70 18 82 22 C94 26 96 40 88 50 C82 58 90 70 80 80 C70 90 56 82 46 90 C36 98 20 92 16 80 C12 68 4 62 6 48 C8 34 20 30 24 20 C28 10 40 8 52 6 Z" fill="${c.hex}" ${sw}/>
+      <circle cx="86" cy="86" r="6" fill="${c.hex}" ${sw}/><circle cx="12" cy="20" r="4" fill="${c.hex}" ${sw}/>
+      <ellipse cx="34" cy="34" rx="10" ry="14" fill="${c.light}" opacity="0.9" transform="rotate(-30 34 34)"/>
+      <circle cx="62" cy="62" r="5" fill="${c.light}" opacity="0.8"/>
+    ${svgClose}` };
+  });
+
+  const SHAPES = {
+    circle: { label: 'Circle', path: '<circle cx="50" cy="50" r="38"/>' },
+    triangle: { label: 'Triangle', path: '<path d="M50 10 L92 86 L8 86 Z"/>' },
+    square: { label: 'Square', path: '<rect x="14" y="14" width="72" height="72" rx="8"/>' },
+    star: { label: 'Star', path: '<path d="M50 6 L61 36 L94 38 L68 58 L77 90 L50 72 L23 90 L32 58 L6 38 L39 36 Z"/>' },
+    heart: { label: 'Heart', path: '<path d="M50 88 C20 66 6 50 10 32 C14 16 36 12 50 30 C64 12 86 16 90 32 C94 50 80 66 50 88 Z"/>' },
+    hexagon: { label: 'Hexagon', path: '<path d="M50 8 L86 29 L86 71 L50 92 L14 71 L14 29 Z"/>' }
+  };
+  Object.entries(SHAPES).forEach(([sid, s]) => {
+    Object.entries(COLORS).forEach(([cid, c]) => {
+      Icons.shapes[`${sid}-${cid}`] = {
+        label: `${c.label} ${s.label}`,
+        svg: `${svgOpen}<g fill="${c.hex}" ${sw}>${s.path}</g><ellipse cx="36" cy="34" rx="7" ry="10" fill="#fff" opacity="0.35" transform="rotate(-25 36 34)"/>${svgClose}`
+      };
+    });
+  });
+
+  const STICKERS = {
+    animals: { name: 'Safari Star', svg: `${svgOpen}
+      <circle cx="50" cy="50" r="44" fill="#FFB45E"/>
+      <circle cx="50" cy="50" r="44" fill="none" ${sw}/>
+      <g fill="#8B5A2B" ${sw}><ellipse cx="50" cy="60" rx="16" ry="14"/><circle cx="30" cy="42" r="8"/><circle cx="42" cy="30" r="8"/><circle cx="58" cy="30" r="8"/><circle cx="70" cy="42" r="8"/></g>
+      <path d="M50 70 c-6 -5 -10 -8 -10 -12 c0 -4 6 -5 10 0 c4 -5 10 -4 10 0 c0 4 -4 7 -10 12 z" fill="#FF6B6B"/>
+      <path d="M22 18 l3 6 l6 1 l-5 4 l1 6 l-5 -3 l-5 3 l1 -6 l-5 -4 l6 -1 z" fill="#FFD23F" ${sw}/>
+    ${svgClose}` },
+    colors: { name: 'Rainbow Hero', svg: `${svgOpen}
+      <circle cx="50" cy="50" r="44" fill="#CDEFFF"/>
+      ${[['#FF4B4B',40],['#FF8C42',34],['#FFD23F',28],['#4CB944',22],['#3A86FF',16],['#9B5DE5',10]].map(([c, r]) => `<path d="M${50 - r} 64 A${r} ${r} 0 0 1 ${50 + r} 64" fill="none" stroke="${c}" stroke-width="6"/>`).join('')}
+      <path d="M10 64 A40 40 0 0 1 90 64" fill="none" ${sw}/>
+      <ellipse cx="22" cy="70" rx="14" ry="9" fill="#fff" ${sw}/><ellipse cx="78" cy="70" rx="14" ry="9" fill="#fff" ${sw}/>
+      <circle cx="50" cy="50" r="44" fill="none" ${sw}/>
+    ${svgClose}` },
+    fruits: { name: 'Fruit Champion', svg: `${svgOpen}
+      <circle cx="50" cy="50" r="44" fill="#CFF4D2"/>
+      <path d="M50 36 c-12 -12 -30 -4 -30 16 c0 16 10 32 22 32 c3 0 5 -2 8 -2 s5 2 8 2 c12 0 22 -16 22 -32 c0 -20 -18 -28 -30 -16 z" fill="#FF4B4B" ${sw}/>
+      <path d="M50 36 c0 -8 4 -14 8 -18" fill="none" stroke="#6B3E1E" stroke-width="4" stroke-linecap="round"/>
+      <path d="M52 28 c8 -8 20 -4 18 2 c-8 4 -14 2 -18 -2 z" fill="#6BCB77" ${sw}/>
+      <circle cx="40" cy="58" r="3" fill="${INK}"/><circle cx="56" cy="58" r="3" fill="${INK}"/>
+      <path d="M42 68 q6 5 12 0" fill="none" ${sw}/>
+      <path d="M72 18 l2 5 l5 1 l-4 3 l1 5 l-4 -3 l-4 3 l1 -5 l-4 -3 l5 -1 z" fill="#FFD23F" ${sw}/>
+      <circle cx="50" cy="50" r="44" fill="none" ${sw}/>
+    ${svgClose}` },
+    shapes: { name: 'Shape Rocket', svg: `${svgOpen}
+      <circle cx="50" cy="50" r="44" fill="#2B2140"/>
+      <g fill="#fff">${[[20,30],[76,24],[80,66],[22,70],[50,88]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="1.8"/>`).join('')}</g>
+      <path d="M50 10 L68 34 L32 34 Z" fill="#FF4B4B" ${sw}/>
+      <rect x="32" y="34" width="36" height="34" fill="#4CC9F0" ${sw}/>
+      <circle cx="50" cy="50" r="8" fill="#FFD23F" ${sw}/>
+      <path d="M32 68 L22 80 L32 80 Z" fill="#9B5DE5" ${sw}/><path d="M68 68 L78 80 L68 80 Z" fill="#9B5DE5" ${sw}/>
+      <path d="M40 68 L50 90 L60 68 Z" fill="#FF8C42" ${sw}/>
+      <circle cx="50" cy="50" r="44" fill="none" ${sw}/>
+    ${svgClose}` }
+  };
+
+  const CATEGORIES = [
+    {
+      id: 'animals', title: 'Animals', color: 'btn-peach', icon: 'lion',
+      intro: "Let's find the animals!",
+      questions: [
+        { prompt: 'Find the roaring Lion!', answer: 'lion', choices: ['lion', 'bear', 'duck', 'monkey'] },
+        { prompt: 'Where is the big grey Elephant?', answer: 'elephant', choices: ['elephant', 'pig', 'cat', 'frog'] },
+        { prompt: 'Tap the hopping green Frog!', answer: 'frog', choices: ['frog', 'duck', 'lion', 'bear'] },
+        { prompt: 'Can you find the quacking Duck?', answer: 'duck', choices: ['duck', 'monkey', 'cat', 'pig'] },
+        { prompt: 'Where is the curly-tailed Pig?', answer: 'pig', choices: ['pig', 'elephant', 'bear', 'cat'] },
+        { prompt: 'Find the cheeky Monkey!', answer: 'monkey', choices: ['monkey', 'frog', 'lion', 'duck'] },
+        { prompt: 'Find the tall Giraffe!', answer: 'giraffe', choices: ['giraffe', 'zebra', 'lion', 'cat'] },
+        { prompt: 'Where is the stripy Zebra?', answer: 'zebra', choices: ['zebra', 'penguin', 'owl', 'bear'] },
+        { prompt: 'Tap the wise hooting Owl!', answer: 'owl', choices: ['owl', 'fox', 'duck', 'turtle'] },
+        { prompt: 'Can you find the waddling Penguin?', answer: 'penguin', choices: ['penguin', 'octopus', 'pig', 'giraffe'] },
+        { prompt: 'Where is the clever orange Fox?', answer: 'fox', choices: ['fox', 'cat', 'lion', 'zebra'] },
+        { prompt: 'Find the wiggly Octopus!', answer: 'octopus', choices: ['octopus', 'turtle', 'frog', 'butterfly'] },
+        { prompt: 'Tap the slow and steady Turtle!', answer: 'turtle', choices: ['turtle', 'elephant', 'owl', 'octopus'] },
+        { prompt: 'Where is the fluttering Butterfly?', answer: 'butterfly', choices: ['butterfly', 'duck', 'fox', 'monkey'] }
+      ]
+    },
+    {
+      id: 'colors', title: 'Colors', color: 'btn-sky', icon: 'yellow',
+      intro: "Let's find the colors!",
+      questions: [
+        { prompt: 'Tap the bright Yellow splash!', answer: 'yellow', choices: ['blue', 'red', 'yellow', 'green'] },
+        { prompt: 'Find Red, like a fire truck!', answer: 'red', choices: ['red', 'purple', 'orange', 'blue'] },
+        { prompt: 'Where is Blue, like the sky?', answer: 'blue', choices: ['green', 'blue', 'pink', 'yellow'] },
+        { prompt: 'Can you find Green, like grass?', answer: 'green', choices: ['green', 'orange', 'red', 'purple'] },
+        { prompt: 'Tap Purple, like juicy grapes!', answer: 'purple', choices: ['pink', 'blue', 'purple', 'yellow'] },
+        { prompt: 'Find Orange, like a pumpkin!', answer: 'orange', choices: ['orange', 'red', 'green', 'pink'] }
+      ]
+    },
+    {
+      id: 'fruits', title: 'Fruits', color: 'btn-coral', icon: 'strawberry',
+      intro: "Let's find the fruits!",
+      questions: [
+        { prompt: 'Where is the sweet Strawberry?', answer: 'strawberry', choices: ['apple', 'grape', 'banana', 'strawberry'] },
+        { prompt: 'Find the long yellow Banana!', answer: 'banana', choices: ['banana', 'orange', 'pear', 'watermelon'] },
+        { prompt: 'Tap the crunchy red Apple!', answer: 'apple', choices: ['apple', 'strawberry', 'grape', 'orange'] },
+        { prompt: 'Can you spot the bunch of Grapes?', answer: 'grape', choices: ['pear', 'grape', 'banana', 'watermelon'] },
+        { prompt: 'Where is the juicy Watermelon?', answer: 'watermelon', choices: ['watermelon', 'apple', 'orange', 'pear'] },
+        { prompt: 'Find the round Orange!', answer: 'orange', choices: ['orange', 'strawberry', 'banana', 'grape'] }
+      ]
+    },
+    {
+      id: 'shapes', title: 'Shapes', color: 'btn-leaf', icon: 'triangle-blue',
+      intro: "Let's find the shapes!",
+      questions: [
+        { prompt: 'Click on the Blue Triangle!', answer: 'triangle-blue', choices: ['circle-red', 'triangle-blue', 'square-green', 'star-yellow'] },
+        { prompt: 'Find the Red Circle!', answer: 'circle-red', choices: ['circle-red', 'square-blue', 'heart-purple', 'hexagon-orange'] },
+        { prompt: 'Where is the Yellow Star?', answer: 'star-yellow', choices: ['triangle-green', 'star-yellow', 'circle-purple', 'square-red'] },
+        { prompt: 'Tap the Green Square!', answer: 'square-green', choices: ['square-green', 'star-orange', 'heart-pink', 'triangle-red'] },
+        { prompt: 'Can you find the Purple Heart?', answer: 'heart-purple', choices: ['circle-yellow', 'hexagon-green', 'heart-purple', 'triangle-blue'] },
+        { prompt: 'Where is the Orange Hexagon?', answer: 'hexagon-orange', choices: ['hexagon-orange', 'square-purple', 'star-blue', 'circle-green'] }
+      ]
+    }
+  ];
+
+  function icon(catId, id) { return Icons[catId][id]; }
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  const starSvg = (lit) => `<svg viewBox="0 0 100 100" class="${lit ? 'lit' : ''}" aria-hidden="true"><path d="M50 6 L61 36 L94 38 L68 58 L77 90 L50 72 L23 90 L32 58 L6 38 L39 36 Z" fill="${lit ? '#FFD23F' : '#D8D2E6'}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/></svg>`;
+
+  const Timer = (() => {
+    let startedAt = null;
+    let iv = null;
+    let onExpire = null;
+    function tick() {
+      const lim = Store.get().timeLimitMin;
+      if (!lim || !startedAt) return;
+      if (Date.now() - startedAt >= lim * 60000) {
+        reset();
+        if (onExpire) onExpire();
+      }
+    }
+    function start() {
+      if (startedAt) return;
+      startedAt = Date.now();
+      iv = setInterval(tick, 1000);
+    }
+    function reset() { clearInterval(iv); iv = null; startedAt = null; }
+    function elapsedMin() { return startedAt ? Math.floor((Date.now() - startedAt) / 60000) : 0; }
+    return {
+      start, reset, elapsedMin, tick,
+      set onExpire(fn) { onExpire = fn; },
+      get startedAt() { return startedAt; },
+      set startedAt(v) { startedAt = v; }
+    };
+  })();
+
+  const UI = (() => {
+    const screens = Array.from(document.querySelectorAll('.screen'));
+    let current = 'home';
+    function show(id) {
+      screens.forEach((s) => s.classList.toggle('active', s.id === `screen-${id}`));
+      current = id;
+      const el = $(`#screen-${id}`);
+      if (el) el.scrollTop = 0;
+      $('#btn-cog').classList.toggle('hidden', id !== 'home');
+    }
+    return { show, get current() { return current; } };
+  })();
+
+  const Gate = (() => {
+    const modal = $('#gate');
+    const box = $('#gate-box');
+    const qEl = $('#gate-q');
+    const ansEl = $('#gate-ans');
+    const msgEl = $('#gate-msg');
+    let answer = 0;
+    let typed = '';
+    let fails = 0;
+    let cooldownUntil = 0;
+    let onSuccess = null;
+    let prevFocus = null;
+    function newPuzzle() {
+      const a = 1 + Math.floor(Math.random() * 9);
+      const b = 1 + Math.floor(Math.random() * 9);
+      answer = a + b;
+      typed = '';
+      qEl.textContent = `Grown-ups only: What is ${a} + ${b}?`;
+      ansEl.innerHTML = '&nbsp;';
+    }
+    function open(cb) {
+      onSuccess = cb;
+      fails = 0;
+      msgEl.textContent = '';
+      newPuzzle();
+      prevFocus = document.activeElement;
+      modal.classList.add('active');
+      const first = modal.querySelector('[data-key="1"]');
+      if (first) first.focus();
+    }
+    function close() {
+      modal.classList.remove('active');
+      if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus();
+    }
+    function submit() {
+      if (Date.now() < cooldownUntil) return;
+      if (typed === '') return;
+      if (parseInt(typed, 10) === answer) {
+        fails = 0;
+        const cb = onSuccess;
+        close();
+        if (cb) cb();
+        return;
+      }
+      fails++;
+      box.classList.remove('shake');
+      void box.offsetWidth;
+      box.classList.add('shake');
+      Sfx.wrong();
+      if (fails >= 3) {
+        cooldownUntil = Date.now() + 10000;
+        fails = 0;
+        msgEl.textContent = 'Let\'s wait 10 seconds and try again.';
+        setTimeout(() => { if (modal.classList.contains('active')) { msgEl.textContent = ''; newPuzzle(); } }, 10000);
+      } else {
+        msgEl.textContent = 'Not quite. Here is a new one!';
+      }
+      newPuzzle();
+    }
+    $('#keypad').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-key]');
+      if (!b) return;
+      const k = b.dataset.key;
+      if (Date.now() < cooldownUntil) return;
+      if (k === 'back') typed = typed.slice(0, -1);
+      else if (k === 'ok') { submit(); return; }
+      else if (typed.length < 3) typed += k;
+      ansEl.textContent = typed === '' ? ' ' : typed;
+    });
+    $('#gate-cancel').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    document.addEventListener('keydown', (e) => {
+      if (!modal.classList.contains('active')) return;
+      if (e.key === 'Escape') { close(); return; }
+      if (/^[0-9]$/.test(e.key) && typed.length < 3) { typed += e.key; ansEl.textContent = typed; }
+      else if (e.key === 'Backspace') { typed = typed.slice(0, -1); ansEl.textContent = typed === '' ? ' ' : typed; }
+      else if (e.key === 'Enter') submit();
+    });
+    return { open, close };
+  })();
+
+  const Game = (() => {
+    let cat = null;
+    let order = [];
+    let qi = 0;
+    let wrongTotal = 0;
+    let wrongThisQ = 0;
+    let busy = false;
+    let timers = [];
+    const later = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
+    function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+    function start(catId) {
+      cat = CATEGORIES.find((c) => c.id === catId);
+      order = shuffle(cat.questions.slice()).slice(0, ROUND_SIZE);
+      qi = 0;
+      wrongTotal = 0;
+      busy = false;
+      clearTimers();
+      $('#play-cat-icon').innerHTML = icon(cat.id, cat.icon).svg;
+      UI.show('play');
+      Timer.start();
+      renderQuestion(true);
+    }
+
+    function renderDots() {
+      $('#dots').innerHTML = order.map((_, i) => `<span class="dot ${i < qi ? 'done' : ''} ${i === qi ? 'now' : ''}"></span>`).join('');
+    }
+
+    function renderQuestion(first) {
+      const q = order[qi];
+      wrongThisQ = 0;
+      busy = false;
+      renderDots();
+      const pc = $('#prompt-card');
+      pc.style.animation = 'none';
+      void pc.offsetWidth;
+      pc.style.animation = '';
+      $('#prompt-text').textContent = q.prompt;
+      const grid = $('#choices');
+      grid.innerHTML = '';
+      shuffle(q.choices.slice()).forEach((id) => {
+        const ic = icon(cat.id, id);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'card';
+        b.dataset.id = id;
+        b.setAttribute('aria-label', ic.label);
+        b.innerHTML = `${ic.svg}<span class="label">${ic.label}</span>`;
+        b.addEventListener('click', (e) => pick(b, id, e));
+        grid.appendChild(b);
+      });
+      later(() => Voice.speak(first ? `${cat.intro} ${q.prompt}` : q.prompt), first ? 250 : 350);
+    }
+
+    function pick(card, id, e) {
+      if (busy) return;
+      const q = order[qi];
+      if (id === q.answer) {
+        busy = true;
+        card.classList.add('is-correct');
+        Array.from(card.parentNode.children).forEach((c) => { if (c !== card) c.classList.add('is-locked'); });
+        Sfx.correct();
+        const r = card.getBoundingClientRect();
+        Confetti.burst(r.left + r.width / 2, r.top + r.height / 2, 70);
+        Voice.speak(['Yes!', 'Great job!', 'You found it!', 'Wonderful!', 'Super!'][Math.floor(Math.random() * 5)]);
+        later(() => {
+          qi++;
+          if (qi < order.length) renderQuestion(false);
+          else victory();
+        }, 1100);
+      } else {
+        wrongThisQ++;
+        wrongTotal++;
+        card.classList.add('is-wrong');
+        Sfx.wrong();
+        later(() => card.classList.add('is-dim'), 420);
+        if (wrongThisQ >= 2) later(() => Voice.speak(q.prompt), 500);
+      }
+    }
+
+    function victory() {
+      const stars = wrongTotal === 0 ? 3 : wrongTotal <= 2 ? 2 : 1;
+      Store.addSticker(cat.id);
+      const st = STICKERS[cat.id];
+      $('#victory-stars').innerHTML = [1, 2, 3].map((n) => starSvg(n <= stars)).join('');
+      const stickerEl = $('#victory-sticker');
+      stickerEl.classList.remove('reveal');
+      void stickerEl.offsetWidth;
+      stickerEl.classList.add('reveal');
+      stickerEl.innerHTML = st.svg;
+      $('#victory-sticker-name').textContent = `You earned the ${st.name} sticker!`;
+      $('#victory-sub').textContent = stars === 3 ? `Perfect! You know all the ${cat.title.toLowerCase()}!` : `You finished the ${cat.title.toLowerCase()} adventure!`;
+      UI.show('victory');
+      Sfx.fanfare();
+      Confetti.rain();
+      later(() => Voice.speak(`Hooray! You earned ${stars} ${stars === 1 ? 'star' : 'stars'} and the ${st.name} sticker!`), 400);
+      renderHome();
+    }
+
+    function stop() { clearTimers(); busy = true; Voice.stop(); }
+
+    return { start, stop, get category() { return cat; } };
+  })();
+
+  function renderHome() {
+    const earned = Store.get().stickers;
+    $('#cat-grid').innerHTML = CATEGORIES.map((c) => `
+      <button class="btn cat-btn ${c.color} ${earned.includes(c.id) ? 'earned' : ''}" type="button" data-cat="${c.id}" aria-label="Play ${c.title}">
+        <span class="earned-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="${INK}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        ${icon(c.id, c.icon).svg.replace('<svg ', '<svg class="cat-icon" ')}
+        <span>${c.title}</span>
+      </button>`).join('');
+  }
+
+  function renderStickerBook() {
+    const earned = Store.get().stickers;
+    $('#sticker-count').textContent = earned.length === 0
+      ? 'Finish an adventure to earn your first sticker!'
+      : earned.length === CATEGORIES.length ? 'You collected them all! Amazing!' : `${earned.length} of ${CATEGORIES.length} stickers collected`;
+    $('#sticker-grid').innerHTML = CATEGORIES.map((c) => {
+      const has = earned.includes(c.id);
+      const st = STICKERS[c.id];
+      return `<div class="sticker-slot">
+        <div class="sticker ${has ? '' : 'locked'}" aria-label="${has ? st.name + ' sticker' : st.name + ' sticker, not yet earned'}">
+          ${st.svg}
+          ${has ? '' : `<span class="lock-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>`}
+        </div>
+        <p class="sticker-name">${has ? st.name : c.title}</p>
+      </div>`;
+    }).join('');
+  }
+
+  function renderDashboard() {
+    const s = Store.get();
+    document.querySelectorAll('#seg-voice .btn').forEach((b) => b.classList.toggle('on', b.dataset.rate === s.voiceRate));
+    document.querySelectorAll('#seg-time .btn').forEach((b) => b.classList.toggle('on', Number(b.dataset.min) === Number(s.timeLimitMin)));
+    $('#dash-elapsed').textContent = `${Timer.elapsedMin()} min`;
+    $('#dash-sticker-info').textContent = `${s.stickers.length} of ${CATEGORIES.length} stickers earned.`;
+    const clearBtn = $('#btn-clear');
+    clearBtn.textContent = 'Clear all stickers';
+    clearBtn.dataset.armed = '';
+    clearBtn.disabled = s.stickers.length === 0;
+    clearBtn.style.opacity = s.stickers.length === 0 ? '0.5' : '1';
+  }
+
+  let dashInterval = null;
+  function openDashboard() {
+    renderDashboard();
+    UI.show('dashboard');
+    clearInterval(dashInterval);
+    dashInterval = setInterval(() => { $('#dash-elapsed').textContent = `${Timer.elapsedMin()} min`; }, 1000);
+  }
+
+  function goHome() {
+    clearInterval(dashInterval);
+    Game.stop();
+    renderHome();
+    UI.show('home');
+  }
+
+  function lockGame() {
+    Game.stop();
+    Gate.close();
+    clearInterval(dashInterval);
+    UI.show('locked');
+    Sfx.sleepy();
+    setTimeout(() => Voice.speak('Time for a break! Great playing today.'), 300);
+  }
+  Timer.onExpire = lockGame;
+
+  $('#cat-grid').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-cat]');
+    if (!b) return;
+    Game.start(b.dataset.cat);
+  });
+  $('#btn-stickers').addEventListener('click', () => { renderStickerBook(); UI.show('stickers'); });
+  $('#btn-stickers-home').addEventListener('click', goHome);
+  $('#btn-play-home').addEventListener('click', goHome);
+  $('#btn-repeat').addEventListener('click', () => Voice.speak($('#prompt-text').textContent));
+  $('#btn-again').addEventListener('click', () => Game.start(Game.category.id));
+  $('#btn-more').addEventListener('click', goHome);
+  $('#btn-cog').addEventListener('click', () => Gate.open(openDashboard));
+  $('#btn-unlock').addEventListener('click', () => Gate.open(() => { Timer.reset(); openDashboard(); }));
+  $('#btn-dash-home').addEventListener('click', goHome);
+  $('#btn-dash-play').addEventListener('click', goHome);
+  $('#btn-voice-test').addEventListener('click', () => Voice.speak('Hello! Tap the bright yellow splash!'));
+
+  $('#seg-voice').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-rate]');
+    if (!b) return;
+    Store.set({ voiceRate: b.dataset.rate });
+    renderDashboard();
+  });
+  $('#seg-time').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-min]');
+    if (!b) return;
+    Store.set({ timeLimitMin: Number(b.dataset.min) });
+    if (Timer.startedAt) { Timer.reset(); }
+    renderDashboard();
+  });
+  $('#btn-clear').addEventListener('click', (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed !== 'yes') {
+      b.dataset.armed = 'yes';
+      b.textContent = 'Really clear? Tap again';
+      setTimeout(() => { if (b.dataset.armed === 'yes') { b.dataset.armed = ''; b.textContent = 'Clear all stickers'; } }, 4000);
+      return;
+    }
+    Store.clearStickers();
+    renderDashboard();
+    renderHome();
+  });
+
+  document.addEventListener('pointerdown', () => Sfx.unlock(), { passive: true });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.btn') && !e.target.closest('.card')) Sfx.tap();
+  });
+
+  Voice.onState((speaking) => $('#btn-repeat').classList.toggle('speaking', speaking));
+  if (!Voice.supported) {
+    $('#btn-repeat').classList.add('hidden');
+    $('#btn-voice-test').classList.add('hidden');
+  }
+
+  document.addEventListener('visibilitychange', () => { if (document.hidden) Voice.stop(); });
+
+  renderHome();
+  UI.show('home');
+})();
+</script>
+</body>
+</html>

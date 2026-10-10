@@ -201,6 +201,10 @@ Checklist:
 - [ ] Switch browser tab mid-duck: game pauses; click resumes.
 - [ ] Home button returns to picker, game audio stops.
 
+## Hosting (2026-10-10)
+
+Source: github.com/KhizerRehan/ai, folder `games/shooting-bird`. Deploy: `.github/workflows/deploy-shooting-bird.yml` builds with base `/ai/` and publishes to GitHub Pages on every push touching this folder. Live URL: https://khizerrehan.github.io/ai/. Pages source must be set to "GitHub Actions" in repo settings. A private copy also exists as a Claude artifact.
+
 ## Deferred (not v1)
 
 Touch input, high score persistence, mute button UI, multiple ducks at once, duck colours with different points, leaderboard, PWA/offline.

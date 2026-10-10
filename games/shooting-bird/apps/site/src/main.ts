@@ -1,4 +1,4 @@
-import type { GameHandle } from '@kgf/core'
+import { isPlayable, type GameHandle } from '@kgf/core'
 import { renderPicker } from './picker'
 import { games } from './registry'
 
@@ -14,7 +14,7 @@ function route(): void {
   app.replaceChildren()
 
   const match = /^#\/play\/([\w-]+)$/.exec(location.hash)
-  const game = match ? games.find((g) => g.id === match[1]) : undefined
+  const game = match ? games.filter(isPlayable).find((g) => g.id === match[1]) : undefined
 
   if (!game) {
     if (location.hash && location.hash !== '#/') {

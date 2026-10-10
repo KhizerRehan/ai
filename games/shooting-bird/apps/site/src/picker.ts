@@ -1,12 +1,12 @@
-import type { GameDefinition } from '@kgf/core'
+import { isPlayable, type GameEntry } from '@kgf/core'
 
-export function renderPicker(root: HTMLElement, games: readonly GameDefinition[]): void {
+export function renderPicker(root: HTMLElement, games: readonly GameEntry[]): void {
   const grid = document.createElement('div')
   grid.className = 'picker'
   for (const game of games) {
     const tile = document.createElement('a')
     tile.className = 'tile'
-    tile.href = `#/play/${game.id}`
+    tile.href = isPlayable(game) ? `#/play/${game.id}` : game.href
     const icon = document.createElement('div')
     icon.className = 'tile-icon'
     icon.textContent = game.icon

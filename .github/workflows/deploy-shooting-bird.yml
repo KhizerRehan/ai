@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "games/shooting-bird/**"
+      - "games/tiny-explorers/**"
       - ".github/workflows/deploy-shooting-bird.yml"
   workflow_dispatch:
 
